@@ -2,6 +2,8 @@ package com.rain.blog.backend.service;
 
 import com.rain.blog.backend.model.entity.BlogPost;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.rain.blog.backend.model.vo.PostListItemVO;
 
 /**
 * @author Mova
@@ -10,4 +12,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface BlogPostService extends IService<BlogPost> {
 
+    /**
+     * 分页查询已发布文章列表
+     */
+    Page<PostListItemVO> pagePublishedPosts(long current, long pageSize);
 }
