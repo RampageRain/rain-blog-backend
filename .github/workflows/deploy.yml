@@ -1,0 +1,59 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: rain-blog-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy backend on server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          PORT="${SERVER_PORT:-22}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/rain_blog_deploy
+          chmod 600 ~/.ssh/rain_blog_deploy
+          ssh-keyscan -p "$PORT" "$SERVER_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/rain_blog_deploy -p "$PORT" "$SERVER_USER@$SERVER_HOST" <<'EOF'
+          set -euo pipefail
+          APP_DIR="$HOME/rain-blog"
+          mkdir -p "$APP_DIR"
+          cd "$APP_DIR"
+
+          if [ ! -d rain-blog-backend/.git ]; then
+            rm -rf rain-blog-backend
+            git clone https://github.com/RampageRain/rain-blog-backend.git rain-blog-backend
+          else
+            git -C rain-blog-backend fetch origin main
+            git -C rain-blog-backend reset --hard origin/main
+          fi
+
+          if [ ! -d rain-blog-frontend/.git ]; then
+            rm -rf rain-blog-frontend
+            git clone https://github.com/RampageRain/rain-blog-frontend.git rain-blog-frontend
+          else
+            git -C rain-blog-frontend fetch origin main
+            git -C rain-blog-frontend reset --hard origin/main
+          fi
+
+          if [ ! -f .env ]; then
+            echo "Missing $APP_DIR/.env"
+            exit 1
+          fi
+
+          cd rain-blog-backend
+          sudo docker compose --env-file ../.env up -d --build backend
+          sudo docker compose --env-file ../.env ps
+          EOF
