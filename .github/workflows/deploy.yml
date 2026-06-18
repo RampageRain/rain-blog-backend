@@ -26,7 +26,7 @@ jobs:
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/rain_blog_deploy
           chmod 600 ~/.ssh/rain_blog_deploy
           ssh-keyscan -p "$PORT" "$SERVER_HOST" >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/rain_blog_deploy -p "$PORT" "$SERVER_USER@$SERVER_HOST" <<'EOF'
+          ssh -T -i ~/.ssh/rain_blog_deploy -p "$PORT" "$SERVER_USER@$SERVER_HOST" 'bash -seuo pipefail' <<'EOF'
           set -euo pipefail
           APP_DIR="$HOME/rain-blog"
           mkdir -p "$APP_DIR"
